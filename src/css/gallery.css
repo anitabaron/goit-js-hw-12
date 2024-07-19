@@ -7,6 +7,7 @@ body {
   color: #2e2f42;
   font-size: 16px;
   line-height: 1.5;
+  background-color: #f4f4fd;
 }
 
 h3 {
@@ -49,7 +50,7 @@ p {
   border-color: #4e75ff;
 }
 
-.search-form button {
+.btn {
   border-radius: 8px;
   border: none;
   padding: 8px 16px;
@@ -61,7 +62,7 @@ p {
   font-weight: 500;
 }
 
-.search-form button:hover {
+.btn button:hover {
   background-color: #6c8cff;
 }
 
@@ -78,13 +79,20 @@ p {
   border: 1px solid #808080;
   width: 360px;
   height: 200px;
+  box-shadow: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.list-container:hover,
+.list-container:focus {
+  box-shadow: 0 3px 3px 0 rgba(46, 47, 66, 0.08),
+    0 2px 2px 0 rgba(46, 47, 66, 0.16), 0 1px 6px 0 rgba(46, 47, 66, 0.08);
 }
 
 .image-container {
   border: none;
   object-fit: cover;
   max-width: 100%;
-  height: 152px;
+  height: 150px;
   overflow: hidden;
 }
 
@@ -93,6 +101,7 @@ p {
 }
 
 .descr-list {
+  background-color: #fff;
   display: flex;
   text-align: center;
   gap: 32px;

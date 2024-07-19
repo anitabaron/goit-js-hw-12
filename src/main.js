@@ -2,6 +2,7 @@ import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
+import axios from 'axios';
 
 const API_KEY = '44946151-dc02d84f49eea13b7d5c48659';
 const BASE_URL = 'https://pixabay.com/api/';
@@ -18,6 +19,7 @@ const createToggle = selector => ({
 const loader = createToggle('.spinner');
 const loadText = createToggle('.loading-text');
 const queryText = createToggle('.query-text');
+const moreBtn = createToggle('.more');
 
 searchForm.addEventListener('submit', event => {
   event.preventDefault();
@@ -25,48 +27,74 @@ searchForm.addEventListener('submit', event => {
   fetchImages(request);
 });
 
-function fetchImages(request) {
-  const url = `${BASE_URL}?key=${API_KEY}&q=${encodeURIComponent(
-    request
-  )}&image_type=photo&orientation=horizontal&safesearch=true`;
-
+async function fetchImages(request, page = 1) {
   loader.enable();
   loadText.enable();
-
-  fetch(url)
-    .then(res => {
-      if (!res.ok) {
-        throw new Error(`Error! status: ${res.status}`);
-      }
-      return res.json();
-    })
-    .then(data => {
+  try {
+    const response = await axios.get(BASE_URL, {
+      params: {
+        key: API_KEY,
+        q: request,
+        image_type: `photo`,
+        orientation: `horizontal`,
+        safesearch: `true`,
+        page: page,
+        per_page: 30,
+        // _sort: 'user', //sort Math random
+      },
+    });
+    console.log('Posts: ', response.data);
+    if (response.data.hits) {
+      displayImages(response.data.hits);
       loader.disable();
       loadText.disable();
       queryText.enable();
+      moreBtn.enable();
       queryWord.textContent = inputField.value;
-
-      if (data.hits) {
-        displayImages(data.hits);
-      } else {
-        iziToast.warning({
-          message:
-            'Sorry, there are no images matching your search query. Please try again!',
-          backgroundColor: '#ef4040',
-          messageColor: '#fff',
-        });
-      }
-    })
-    .catch(error => {
-      loader.disable();
-      loadText.disable();
-      console.error(error);
+    } else {
       iziToast.warning({
-        title: 'Error',
-        message: 'An error occurred while fetching images',
+        message:
+          'Sorry, there are no images matching your search query. Please try again!',
+        backgroundColor: '#ef4040',
+        messageColor: '#fff',
       });
+    }
+    return response.data;
+  } catch (error) {
+    loader.disable();
+    loadText.disable();
+    console.error(error);
+    iziToast.warning({
+      title: 'Error',
+      message: 'An error occurred while fetching images',
     });
+  }
 }
+//
+//   await (res => {
+//     if (!res.ok) {
+//       throw new Error(`Error! status: ${res.status}`);
+//     }
+//     return res.json();
+//   });
+//   await (data => {
+//     loader.disable();
+//     loadText.disable();
+//     queryText.enable();
+//     queryWord.textContent = inputField.value;
+
+//     if (data.hits) {
+//       displayImages(data.hits);
+//     } else {
+//       iziToast.warning({
+//         message:
+//           'Sorry, there are no images matching your search query. Please try again!',
+//         backgroundColor: '#ef4040',
+//         messageColor: '#fff',
+//       });
+//     }
+//   })
+// }
 
 const message =
   'Sorry, there are no images matching your search query. Please try again!';
@@ -113,6 +141,7 @@ const lightbox = new SimpleLightbox('.gallery-result-list a', {
 
 function makeImgItem({
   webformatURL,
+  largeImageURL,
   tags,
   downloads,
   likes,
@@ -120,9 +149,9 @@ function makeImgItem({
   views,
 }) {
   return `<li class="list-container">
-    <div >
+    <div>
       <div class="image-container">
-        <a href="${webformatURL}" data-source="${webformatURL}">
+        <a href="${largeImageURL}">
           <img src="${webformatURL}" alt="${tags}" />
         </a>
       </div>
@@ -149,3 +178,22 @@ function makeImgItem({
     </div>
   </li>`;
 }
+
+// const fetchPosts = async () => {
+//   const response = await axios.get(
+//     '<https://jsonplaceholder.typicode.com/posts?_limit=5&_page=3>'
+//   );
+//   console.log('Posts: ', response.data);
+// };
+
+// Kontroluje liczbę elementów na stronie
+let limit = 30;
+// Liczba stron w zbiorze
+const totalPages = Math.ceil(100 / limit);
+
+// if (page > totalPages) {
+//   return iziToast.warning({
+//     position: 'topRight',
+//     message: "We're sorry, there are no more posts to load",
+//   });
+// }
