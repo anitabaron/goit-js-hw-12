@@ -35,6 +35,7 @@ searchForm.addEventListener('submit', event => {
 let page = 1;
 let currentPage = 1;
 let totalHits = 0;
+let per_page = 30;
 
 async function fetchImages(request, page = 1) {
   loader.enable();
@@ -50,10 +51,11 @@ async function fetchImages(request, page = 1) {
         image_type: `photo`,
         orientation: `horizontal`,
         safesearch: `true`,
-        page: page,
-        per_page: 30,
+        page,
+        per_page,
       },
     });
+    const totalPages = Math.ceil(response.data.totalHits / per_page);
     if (response.data.hits) {
       totalHits = response.data.totalHits;
       displayImages(response.data.hits);
@@ -62,6 +64,15 @@ async function fetchImages(request, page = 1) {
       queryText.enable();
 
       currentPage = page;
+    } else if (page > totalPages) {
+      moreBtn.disable();
+      topBtn.disable();
+      loadText.disable;
+      loader.disable();
+      iziToast.warning({
+        position: 'topRight',
+        message: "We're sorry, but you've reached the end of search results.",
+      });
     } else {
       moreBtn.disable();
       topBtn.disable();
@@ -181,17 +192,6 @@ moreButton.addEventListener('click', () => {
   const request = inputField.value;
   fetchImages(request, currentPage + 1);
 });
-
-// Liczba stron w zbiorze ??
-const totalPages = Math.ceil(100 / totalHits);
-
-if (page > totalPages) {
-  moreBtn.disable();
-  iziToast.warning({
-    position: 'topRight',
-    message: "We're sorry, but you've reached the end of search results.",
-  });
-}
 
 let rect = resultsGalleryList.getBoundingClientRect();
 
