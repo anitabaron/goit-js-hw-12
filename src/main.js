@@ -10,6 +10,8 @@ const searchForm = document.querySelector(`.search-form`);
 const inputField = document.querySelector(`.input-field`);
 const resultsGalleryList = document.querySelector(`.gallery-result-list`);
 const queryWord = document.querySelector('.query-word');
+const moreButton = document.querySelector('.more');
+const topButton = document.querySelector('.top');
 
 const createToggle = selector => ({
   enable: () => document.querySelector(selector).classList.remove('disabled'),
@@ -20,16 +22,26 @@ const loader = createToggle('.spinner');
 const loadText = createToggle('.loading-text');
 const queryText = createToggle('.query-text');
 const moreBtn = createToggle('.more');
+const topBtn = createToggle('.top');
 
 searchForm.addEventListener('submit', event => {
   event.preventDefault();
   const request = inputField.value;
-  fetchImages(request);
+  currentPage = 1;
+  fetchImages(request, currentPage);
+  queryWord.textContent = inputField.value;
 });
+
+let page = 1;
+let currentPage = 1;
+let totalHits = 0;
 
 async function fetchImages(request, page = 1) {
   loader.enable();
   loadText.enable();
+  if (page === 1) {
+    resultsGalleryList.innerHTML = '';
+  }
   try {
     const response = await axios.get(BASE_URL, {
       params: {
@@ -40,18 +52,19 @@ async function fetchImages(request, page = 1) {
         safesearch: `true`,
         page: page,
         per_page: 30,
-        // _sort: 'user', //sort Math random
       },
     });
-    console.log('Posts: ', response.data);
     if (response.data.hits) {
+      totalHits = response.data.totalHits;
       displayImages(response.data.hits);
       loader.disable();
       loadText.disable();
       queryText.enable();
-      moreBtn.enable();
-      queryWord.textContent = inputField.value;
+
+      currentPage = page;
     } else {
+      moreBtn.disable();
+      topBtn.disable();
       iziToast.warning({
         message:
           'Sorry, there are no images matching your search query. Please try again!',
@@ -63,49 +76,34 @@ async function fetchImages(request, page = 1) {
   } catch (error) {
     loader.disable();
     loadText.disable();
+    moreBtn.disable();
+    topBtn.disable();
     console.error(error);
     iziToast.warning({
       title: 'Error',
       message: 'An error occurred while fetching images',
     });
+    throw new Error(`Error! status: ${res.status}`);
   }
 }
-//
-//   await (res => {
-//     if (!res.ok) {
-//       throw new Error(`Error! status: ${res.status}`);
-//     }
-//     return res.json();
-//   });
-//   await (data => {
-//     loader.disable();
-//     loadText.disable();
-//     queryText.enable();
-//     queryWord.textContent = inputField.value;
-
-//     if (data.hits) {
-//       displayImages(data.hits);
-//     } else {
-//       iziToast.warning({
-//         message:
-//           'Sorry, there are no images matching your search query. Please try again!',
-//         backgroundColor: '#ef4040',
-//         messageColor: '#fff',
-//       });
-//     }
-//   })
-// }
 
 const message =
   'Sorry, there are no images matching your search query. Please try again!';
 
-function displayImages(images) {
-  resultsGalleryList.innerHTML = '';
+function displayImages(images, page) {
+  if (page === 1) {
+    resultsGalleryList.innerHTML = '';
+  }
+  if (totalHits > images.length) {
+    moreBtn.enable();
+    topBtn.enable();
+  }
   if (images.length === 0) {
     loader.disable();
     loadText.disable();
     queryText.disable();
-
+    moreBtn.disable();
+    topBtn.disable();
     iziToast.warning({
       message: message,
       backgroundColor: '#ef4040',
@@ -179,21 +177,27 @@ function makeImgItem({
   </li>`;
 }
 
-// const fetchPosts = async () => {
-//   const response = await axios.get(
-//     '<https://jsonplaceholder.typicode.com/posts?_limit=5&_page=3>'
-//   );
-//   console.log('Posts: ', response.data);
-// };
+moreButton.addEventListener('click', () => {
+  const request = inputField.value;
+  fetchImages(request, currentPage + 1);
+});
 
-// Kontroluje liczbę elementów na stronie
-let limit = 30;
-// Liczba stron w zbiorze
-const totalPages = Math.ceil(100 / limit);
+// Liczba stron w zbiorze ??
+const totalPages = Math.ceil(100 / totalHits);
 
-// if (page > totalPages) {
-//   return iziToast.warning({
-//     position: 'topRight',
-//     message: "We're sorry, there are no more posts to load",
-//   });
-// }
+if (page > totalPages) {
+  moreBtn.disable();
+  iziToast.warning({
+    position: 'topRight',
+    message: "We're sorry, but you've reached the end of search results.",
+  });
+}
+
+let rect = resultsGalleryList.getBoundingClientRect();
+
+topButton.addEventListener('click', () => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  });
+});
